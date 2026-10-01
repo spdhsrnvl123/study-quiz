@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>오늘의 공부 · 풀어 볼 문제</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  /* 메일(세로 웹툰)과 같은 말투: 먹 테두리, 버터 노랑, 남색 */
+  :root {
+    --ink: #000000;
+    --paper: #FFFFFF;
+    --butter: #FFDE59;
+    --butter-pale: #FFF4C4;
+    --bg: #FFFBEA;
+    --navy: #2F3F9E;
+    --navy-pale: #EEF0FA;
+    --ok: #15803D;
+    --ok-pale: #E7F6EC;
+    --no: #D92D20;
+    --no-pale: #FDECEA;
+    --muted: #5B5B5B;
+    --shadow: 5px 5px 0 var(--ink);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px 56px; }
+
+  /* 위쪽 띠: 푼 수 */
+  .bar {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .bar-in { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .track { flex: 1; height: 14px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); overflow: hidden; }
+  .fill { height: 100%; width: 0; background: var(--butter); border-right: 2px solid var(--ink); transition: width .35s ease; }
+  .fill.zero { border-right: 0; }
+  .count { font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* 표지 */
+  .cover {
+    margin: 22px 0 26px;
+    background: var(--butter);
+    border: 3px solid var(--ink);
+    box-shadow: var(--shadow);
+    padding: 18px 18px 19px;
+  }
+  .kicker { display: inline-block; background: var(--ink); color: var(--butter); font-size: 13px; font-weight: 800; padding: 4px 9px 5px; letter-spacing: .2px; }
+  .cover h1 { margin: 10px 0 0; font-size: 27px; line-height: 1.2; letter-spacing: -0.5px; font-weight: 800; }
+  .cover .sub { margin: 6px 0 0; font-size: 18px; font-weight: 700; line-height: 1.4; }
+  .cover .date { margin: 10px 0 0; font-size: 14px; }
+
+  /* 문제 칸 */
+  .card {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    box-shadow: var(--shadow);
+    margin: 0 0 26px;
+    scroll-margin-top: 70px;
+  }
+  .card-in { padding: 16px 16px 18px; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
+  .num { background: var(--navy); color: #fff; font-size: 13px; font-weight: 800; padding: 3px 9px 4px; border-radius: 4px; }
+  .tag { background: var(--butter-pale); border: 1.5px solid var(--ink); font-size: 12.5px; font-weight: 700; padding: 2px 8px 3px; border-radius: 4px; }
+  .mark { margin-left: auto; font-size: 13px; font-weight: 800; }
+  .mark.ok { color: var(--ok); }
+  .mark.no { color: var(--no); }
+  .q { margin: 0 0 14px; font-size: 19px; font-weight: 700; line-height: 1.5; }
+  code {
+    font-family: Menlo, Consolas, "Courier New", monospace;
+    font-size: .86em;
+    background: var(--navy-pale);
+    border: 1px solid #CDD2EE;
+    border-radius: 4px;
+    padding: 1px 4px;
+    word-break: break-all;
+  }
+
+  .choices { display: grid; gap: 9px; }
+  .choice {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; text-align: left;
+    font: inherit; font-size: 16.5px; line-height: 1.45; color: var(--ink);
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    padding: 11px 14px 11px 11px;
+    cursor: pointer;
+    transition: transform .08s ease, background-color .15s ease, border-color .15s ease, opacity .2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice:active { transform: translate(1px, 1px); }
+  .choice:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+  .badge {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--butter); border: 2px solid var(--ink);
+    font-size: 14px; font-weight: 800;
+  }
+  .choice[aria-checked="true"] { border-color: var(--navy); border-width: 3px; padding: 10px 13px 10px 10px; background: var(--navy-pale); }
+  .choice[aria-checked="true"] .badge { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .done .choice { cursor: default; }
+  .done .choice:active { transform: none; }
+  .done .choice.dim { opacity: .45; }
+  .done .choice.right { border-color: var(--ok); border-width: 3px; padding: 10px 13px 10px 10px; background: var(--ok-pale); opacity: 1; }
+  .done .choice.right .badge { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .done .choice.wrong { border-color: var(--no); border-width: 3px; padding: 10px 13px 10px 10px; background: var(--no-pale); opacity: 1; }
+  .done .choice.wrong .badge { background: var(--no); border-color: var(--no); color: #fff; }
+
+  .check {
+    margin: 16px 0 0; width: 100%;
+    font: inherit; font-size: 18px; font-weight: 800; color: var(--ink);
+    background: var(--butter);
+    border: 3px solid var(--ink);
+    border-radius: 10px;
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 13px 16px 14px;
+    cursor: pointer;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .check:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  .check:disabled { background: #EDEDED; color: #8A8A8A; border-color: #9A9A9A; box-shadow: none; cursor: not-allowed; }
+  .check:focus-visible { outline: 3px solid var(--navy); outline-offset: 3px; }
+
+  /* 채점 결과 띠 */
+  .result { border-top: 3px solid var(--ink); padding: 14px 16px 16px; animation: rise .25s ease; }
+  .result.ok { background: var(--ok-pale); }
+  .result.no { background: var(--no-pale); }
+  .verdict { margin: 0; font-size: 19px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .result.ok .verdict { color: var(--ok); }
+  .result.no .verdict { color: var(--no); }
+  .verdict .icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 15px; }
+  .result.ok .icon { background: var(--ok); }
+  .result.no .icon { background: var(--no); }
+  .tick { font-size: 17px; -webkit-text-stroke: 1.1px currentColor; }   /* ✓ 글꼴이 가늘어서 굵게 */
+  .why { margin: 8px 0 0; font-size: 16px; line-height: 1.6; }
+  .why b { font-weight: 800; }
+
+  /* 맺음 */
+  .end { background: var(--paper); border: 3px solid var(--ink); box-shadow: var(--shadow); padding: 20px 18px 20px; animation: rise .3s ease; }
+  .end h2 { margin: 0; font-size: 15px; font-weight: 800; }
+  .score { margin: 6px 0 2px; font-size: 44px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+  .score small { font-size: 22px; font-weight: 700; letter-spacing: 0; }
+  .dots { display: flex; gap: 6px; margin: 10px 0 16px; flex-wrap: wrap; }
+  .dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #fff; border: 2px solid var(--ink); text-decoration: none; }
+  .dot.ok { background: var(--ok); }
+  .dot.no { background: var(--no); }
+  .send {
+    display: block; text-align: center; text-decoration: none;
+    font-size: 19px; font-weight: 800; color: var(--ink);
+    background: var(--butter); border: 3px solid var(--ink); border-radius: 10px;
+    box-shadow: 4px 4px 0 var(--ink); padding: 14px 16px 15px;
+  }
+  .send:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  .again {
+    display: block; width: 100%; margin: 12px 0 0;
+    font: inherit; font-size: 16px; font-weight: 700; color: var(--ink);
+    background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 11px 16px 12px; cursor: pointer;
+  }
+  .note { margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+  .empty { margin: 40px 0; background: var(--paper); border: 3px solid var(--ink); box-shadow: var(--shadow); padding: 22px 18px; }
+  .empty h1 { margin: 0 0 8px; font-size: 22px; }
+  .empty p { margin: 0; font-size: 16px; }
+  footer { margin: 30px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); text-align: center; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="bar" id="bar" hidden>
+  <div class="bar-in">
+    <div class="track" aria-hidden="true"><div class="fill zero" id="fill"></div></div>
+    <div class="count" id="count" aria-live="polite">0 / 0</div>
+  </div>
+</div>
+<main class="wrap" id="app" aria-live="polite"></main>
+<script>
+// 오늘의 공부 메일의 객관식 퀴즈 화면.
+// 문제 묶음은 주소의 # 뒤 d=(JSON → raw deflate → base64url)에만 있다. # 뒤는 서버로 가지 않아서 이 사이트에는 남지 않는다.
+// s=<문제 번호><보기 글자>(예 s=2B)가 있으면 메일에서 그 보기를 누른 것이다 — 골라서 바로 채점한다.
+// 푼 답은 이 기기의 localStorage에만 둔다(메일 날짜별). 다 풀면 '결과 보내기'가 GitHub 이슈 '답: <메일 날짜>'를 연다.
+(function () {
+  "use strict";
+  var LETTERS = "ABCD";
+  var app = document.getElementById("app");
+  var quiz = null, answers = [], storeKey = "";
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  // `코드`·**굵게**만 글로 옮긴다(innerHTML을 쓰지 않는다)
+  function rich(node, s) {
+    String(s).split(/(`[^`]+`|\*\*[^*]+\*\*)/).forEach(function (part) {
+      if (!part) return;
+      if (part.charAt(0) === "`") node.appendChild(el("code", null, part.slice(1, -1)));
+      else if (part.slice(0, 2) === "**") node.appendChild(el("b", null, part.slice(2, -2)));
+      else node.appendChild(document.createTextNode(part));
+    });
+    return node;
+  }
+
+  function loadScript(src) {
+    return new Promise(function (ok, fail) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = ok; s.onerror = fail;
+      document.head.appendChild(s);
+    });
+  }
+
+  function decode(b64) {
+    var t = b64.replace(/-/g, "+").replace(/_/g, "/");
+    while (t.length % 4) t += "=";
+    var bin = atob(t), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (typeof DecompressionStream === "function") {
+      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return new Response(stream).text().then(JSON.parse);
+    }
+    // 옛 브라우저: pako로 푼다
+    return loadScript("https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js").then(function () {
+      return JSON.parse(window.pako.inflateRaw(bytes, { to: "string" }));
+    });
+  }
+
+  function params() {
+    var out = {};
+    location.hash.replace(/^#/, "").split("&").forEach(function (kv) {
+      var i = kv.indexOf("=");
+      if (i > 0) out[kv.slice(0, i)] = kv.slice(i + 1);
+    });
+    return out;
+  }
+
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(answers)); } catch (e) { /* 저장이 막혀도 화면은 돈다 */ }
+  }
+  function restore() {
+    try {
+      var v = JSON.parse(localStorage.getItem(storeKey) || "[]");
+      if (Array.isArray(v)) return v;
+    } catch (e) { /* 없으면 처음부터 */ }
+    return [];
+  }
+
+  function empty(title, msg) {
+    app.textContent = "";
+    var box = el("section", "empty");
+    box.appendChild(el("h1", null, title));
+    box.appendChild(el("p", null, msg));
+    app.appendChild(box);
+    document.getElementById("bar").hidden = true;
+  }
+
+  function progress() {
+    var n = quiz.q.length, done = answers.filter(function (a) { return a != null; }).length;
+    var fill = document.getElementById("fill");
+    fill.style.width = (n ? done / n * 100 : 0) + "%";
+    fill.classList.toggle("zero", done === 0);
+    document.getElementById("count").textContent = done + " / " + n;
+  }
+
+  function issueUrl() {
+    var right = 0, lines = quiz.q.map(function (q, i) {
+      var a = answers[i];
+      if (a == null) return (i + 1) + ") (안 풂)";
+      if (a === q.a) right++;
+      return (i + 1) + ") " + LETTERS[a] + (a === q.a ? " (맞음)" : " (틀림)");
+    });
+    var body = lines.join("\n") + "\n점수: " + right + "/" + quiz.q.length + "\n\n어려움: ";
+    return "https://github.com/" + quiz.r + "/issues/new?title=" + encodeURIComponent("답: " + quiz.d) +
+      "&body=" + encodeURIComponent(body);
+  }
+
+  function renderEnd() {
+    var old = document.getElementById("end");
+    if (old) old.remove();
+    var n = quiz.q.length;
+    if (answers.filter(function (a) { return a != null; }).length < n) return;
+    var right = quiz.q.filter(function (q, i) { return answers[i] === q.a; }).length;
+    var box = el("section", "end");
+    box.id = "end";
+    box.appendChild(el("h2", null, "다 풀었다"));
+    var score = el("p", "score", String(right));
+    score.appendChild(el("small", null, " / " + n + " 맞음"));
+    box.appendChild(score);
+    var dots = el("div", "dots");
+    quiz.q.forEach(function (q, i) {
+      var ok = answers[i] === q.a, d = el("a", "dot " + (ok ? "ok tick" : "no"), ok ? "✓" : "✕");
+      d.href = "#q" + (i + 1);
+      d.setAttribute("aria-label", "문제 " + (i + 1) + (ok ? " 맞음" : " 틀림"));
+      d.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.getElementById("q" + (i + 1)).scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      dots.appendChild(d);
+    });
+    box.appendChild(dots);
+    if (/^[\w.-]+\/[\w.-]+$/.test(quiz.r || "")) {
+      var send = el("a", "send", "결과 보내기");
+      send.href = issueUrl();
+      send.target = "_blank";
+      send.rel = "noopener";
+      box.appendChild(send);
+      box.appendChild(el("p", "note", "GitHub 화면이 열리면 'Create' 또는 'Submit new issue'를 누른다. 내일 아침 메일 맨 위에서 틀린 문제를 다시 짚는다. 어려운 용어는 '어려움:' 줄에, 너무 쉬웠으면 '너무 쉬움'이라고 적는다."));
+    } else {
+      box.appendChild(el("p", "note", "이 링크에는 결과를 보낼 곳이 없다(미리보기)."));
+    }
+    var again = el("button", "again", "처음부터 다시 풀기");
+    again.type = "button";
+    again.addEventListener("click", function () {
+      answers = quiz.q.map(function () { return null; });
+      save();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    box.appendChild(again);
+    app.insertBefore(box, document.getElementById("foot"));   // 맺음은 맨 아래 안내 글 위에
+  }
+
+  function card(q, i) {
+    var n = quiz.q.length, picked = null;
+    var sec = el("section", "card");
+    sec.id = "q" + (i + 1);
+    sec.setAttribute("aria-labelledby", "q" + (i + 1) + "t");
+    var inner = el("div", "card-in");
+    var meta = el("div", "meta");
+    meta.appendChild(el("span", "num", "문제 " + (i + 1) + "/" + n));
+    if (q.g) meta.appendChild(el("span", "tag", q.g));
+    var mark = el("span", "mark");
+    meta.appendChild(mark);
+    inner.appendChild(meta);
+    var title = rich(el("p", "q"), q.x);
+    title.id = "q" + (i + 1) + "t";
+    inner.appendChild(title);
+
+    var list = el("div", "choices");
+    list.setAttribute("role", "radiogroup");
+    list.setAttribute("aria-labelledby", title.id);
+    var buttons = q.c.map(function (c, j) {
+      var b = el("button", "choice");
+      b.type = "button";
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", "false");
+      b.appendChild(el("span", "badge", LETTERS[j]));
+      b.appendChild(rich(el("span"), c));
+      b.addEventListener("click", function () {
+        if (answers[i] != null) return;
+        picked = j;
+        buttons.forEach(function (x, k) { x.setAttribute("aria-checked", String(k === j)); });
+        check.disabled = false;
+      });
+      list.appendChild(b);
+      return b;
+    });
+    inner.appendChild(list);
+
+    var check = el("button", "check", "답 확인");
+    check.type = "button";
+    check.disabled = true;
+    check.addEventListener("click", function () {
+      if (picked == null) return;
+      answers[i] = picked;
+      save();
+      reveal();
+      progress();
+      renderEnd();
+    });
+    inner.appendChild(check);
+    sec.appendChild(inner);
+
+    function reveal() {
+      var a = answers[i], ok = a === q.a;
+      sec.classList.add("done");
+      check.remove();
+      buttons.forEach(function (b, k) {
+        b.disabled = true;
+        b.setAttribute("aria-checked", String(k === a));
+        b.classList.toggle("right", k === q.a);
+        b.classList.toggle("wrong", k === a && !ok);
+        b.classList.toggle("dim", k !== q.a && k !== a);
+        if (k === q.a) { b.querySelector(".badge").textContent = "✓"; b.querySelector(".badge").classList.add("tick"); }
+        else if (k === a) b.querySelector(".badge").textContent = "✕";
+      });
+      mark.className = "mark " + (ok ? "ok" : "no");
+      mark.textContent = ok ? "✓ 맞음" : "✕ 틀림";
+      var res = el("div", "result " + (ok ? "ok" : "no"));
+      var v = el("p", "verdict");
+      v.appendChild(el("span", "icon" + (ok ? " tick" : ""), ok ? "✓" : "✕"));
+      v.appendChild(document.createTextNode(ok ? "정답이에요!" : "오답이에요. 정답은 " + LETTERS[q.a]));
+      res.appendChild(v);
+      res.appendChild(rich(el("p", "why"), q.e));
+      sec.appendChild(res);
+    }
+    if (answers[i] != null) reveal();
+    return sec;
+  }
+
+  function render() {
+    app.textContent = "";
+    var cover = el("header", "cover");
+    cover.appendChild(el("span", "kicker", "오늘의 공부 · 풀어 볼 문제"));
+    var parts = String(quiz.t || "").split(" — ");
+    cover.appendChild(el("h1", null, parts[0] || "오늘의 문제"));
+    if (parts[1]) cover.appendChild(el("p", "sub", parts.slice(1).join(" — ")));
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(quiz.d || "");
+    if (m) {
+      var day = new Date(+m[1], +m[2] - 1, +m[3]);
+      cover.appendChild(el("p", "date", +m[1] + "년 " + (+m[2]) + "월 " + (+m[3]) + "일 " + "일월화수목금토"[day.getDay()] + "요일 메일"));
+    }
+    app.appendChild(cover);
+    quiz.q.forEach(function (q, i) { app.appendChild(card(q, i)); });
+    var foot = el("footer", null, "문제는 메일 링크 안에만 있고 이 사이트에는 저장되지 않는다. 푼 답은 이 기기에만 남는다.");
+    foot.id = "foot";
+    app.appendChild(foot);
+    renderEnd();
+    document.getElementById("bar").hidden = false;
+    progress();
+  }
+
+  // 메일에서 누른 보기(s=2B)를 고르고 채점한 뒤 그 문제로 간다
+  function applyPick(p) {
+    var m = /^(\d+)([A-D])$/.exec(p.s || "");
+    if (!m) return;
+    var i = +m[1] - 1, j = LETTERS.indexOf(m[2]);
+    if (i < 0 || i >= quiz.q.length) return;
+    answers[i] = j;
+    save();
+    // 다시 읽어도 같은 보기를 또 고르지 않게 주소에서 s=를 뗀다(hashchange는 안 생긴다)
+    try { history.replaceState(null, "", "#d=" + p.d); } catch (e) { /* 못 떼도 된다 */ }
+    render();
+    var target = document.getElementById("q" + (i + 1));
+    if (target) target.scrollIntoView({ block: "start" });
+  }
+
+  function start() {
+    var p = params();
+    if (!p.d) {
+      empty("메일의 보기를 눌러서 열어 주세요", "오늘의 공부 메일 맨 끝 '풀어 볼 문제'에서 보기를 누르면 이 화면에 문제가 나온다.");
+      return;
+    }
+    decode(p.d).then(function (data) {
+      if (!data || !Array.isArray(data.q) || !data.q.length) throw new Error("빈 문제");
+      quiz = data;
+      document.title = "풀어 볼 문제 · " + (quiz.t || "오늘의 공부");
+      storeKey = "study-quiz:" + quiz.d + ":" + quiz.t;
+      var saved = restore();
+      answers = quiz.q.map(function (q, i) {
+        var a = saved[i];
+        return typeof a === "number" && a >= 0 && a < q.c.length ? a : null;
+      });
+      if (p.s) applyPick(p); else render();
+    }).catch(function () {
+      empty("문제를 읽지 못했어요", "메일의 링크가 잘렸을 수 있다. 메일로 돌아가 보기를 다시 눌러 주세요.");
+    });
+  }
+
+  window.addEventListener("hashchange", start);
+  start();
+})();
+</script>
+</body>
+</html>
